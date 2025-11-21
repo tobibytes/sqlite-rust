@@ -18,16 +18,26 @@ fn main() -> Result<()> {
             let mut file = File::open(&args[1])?;
             let mut header = [0; 100];
             file.read_exact(&mut header)?;
+            println!("header: {:?}", header);
 
             // The page size is stored at the 16th byte offset, using 2 bytes in big-endian order
             #[allow(unused_variables)]
             let page_size = u16::from_be_bytes([header[16], header[17]]);
-            let tbl_count = u16::from_be_bytes([header[18], header[19]]);
+            let mut buffer = Vec::new();
+            buffer.resize(page_size as usize, 0u8);
+            file.read_exact(&mut buffer[100..])?;
 
-            // You can use print statements as follows for debugging, they'll be visible when running tests.
+            let tbl_count = u16::from_be_bytes([buffer[100 + 3], buffer[100 + 4]]);
+            // directly after is cell pointer array
+//            let cpa_len: u16 = 101 + tbl_count;
+//            let mut cell_pointer_array = vec![0; usize::from(cpa_len)];
+//            file.read_exact(&mut cell_pointer_array)?;
+//            #[allow(unused_variables)]
+//            let offsets = u16::from_be_bytes([cell_pointer_array[0], cell_pointer_array[1]]);
+
+           // You can use print statements as follows for debugging, they'll be visible when running tests.
             eprintln!("Logs from your program will appear here!");
 
-            // TODO: Uncomment the code below to pass the first stage
             println!("database page size: {}", page_size);
             println!("number of tables: {}", tbl_count);
         }
