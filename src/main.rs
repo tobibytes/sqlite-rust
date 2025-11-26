@@ -34,6 +34,7 @@ fn main() -> Result<()> {
             let mut buffer = Vec::new();
             buffer.resize(page_size as usize, 0u8);
             file.read_exact(&mut buffer[100..])?;
+            println!("buffer: {:?}", buffer);
             let page_header_byte = buffer[100];
             let page_header_size = match page_header_byte {
                 13 => 8,
@@ -81,6 +82,7 @@ fn main() -> Result<()> {
                 let rec_payload_start = record_start + rec_header.header_size;
                 let record_payload = &buffer[rec_payload_start..rec_payload_start + rec_header.size - rec_header.header_size];
                 let record = Record::new(record_payload, rec_header);
+                println!("{:?}\n", record);
                 print!("{} ", record.tbl_name);
             }
         },
@@ -172,6 +174,7 @@ impl Record {
         i = record_header.name_size + i;
         let tbl_name = convert_from_ascii(&record_payload[i..record_header.tbl_name_size + i]);
         i = record_header.tbl_name_size + i;
+        i = record_header.root_page_size + i;
         let sql = convert_from_ascii(&record_payload[i..record_header.sql_size + i]);
         Record { s_type, name, tbl_name, sql, header: record_header }
     }
