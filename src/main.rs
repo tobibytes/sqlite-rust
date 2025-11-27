@@ -32,6 +32,7 @@ fn get_db_info(buffer: &Vec<u8>, page_size: u16, print_result: bool) -> DbInfo {
 }
 
 fn get_db_tables<'a> (db_info: &'a mut DbInfo, buffer: &Vec<u8>, print_result: bool) -> &'a Records {
+    // Read master table 
     let mut cells: Vec<Cell> = Vec::new();
     let mut i = db_info.page_header_size + 100;
     loop {
@@ -123,7 +124,7 @@ struct RecordHeader {
     type_size: usize,
     name_size: usize,
     tbl_name_size: usize,
-    root_page_size: usize,
+    root_page: usize,
     sql_size: usize,
 }
 
@@ -140,7 +141,7 @@ impl RecordHeader {
         let type_size = ((serials[0] - 13) / 2) as usize;
         let name_size = ((serials[1] - 13) / 2) as usize;
         let tbl_name_size = ((serials[2] - 13) / 2) as usize;
-        let root_page_size = serials[3] as usize;
+        let root_page = serials[3] as usize;
         let sql_size = ((serials[4] - 13) / 2) as usize;
 
         RecordHeader {
@@ -150,7 +151,7 @@ impl RecordHeader {
             type_size,
             name_size,
             tbl_name_size,
-            root_page_size,
+            root_page,
             sql_size,
         }
     }
@@ -200,7 +201,7 @@ impl Record {
         i = record_header.name_size + i;
         let tbl_name = convert_from_ascii(&record_payload[i..record_header.tbl_name_size + i]);
         i = record_header.tbl_name_size + i;
-        i = record_header.root_page_size + i;
+        i = record_header.root_page + i;
         let sql = convert_from_ascii(&record_payload[i..record_header.sql_size + i]);
         Record { s_type, name, tbl_name, sql, header: record_header }
     }
