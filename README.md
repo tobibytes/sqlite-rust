@@ -1,77 +1,40 @@
-[![progress-banner](https://backend.codecrafters.io/progress/sqlite/d006dc55-220c-48d5-83a9-243565fc4923)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# sqlite-rust
 
-This is a starting point for Rust solutions to the
-["Build Your Own SQLite" Challenge](https://codecrafters.io/challenges/sqlite).
+A SQLite reader implemented from scratch in Rust — no external SQL libraries. Parses the raw SQLite file format directly: 100-byte database header, B-tree page headers, cell pointer arrays, varint-encoded payloads, and the `sqlite_master` schema table.
 
-In this challenge, you'll build a barebones SQLite implementation that supports
-basic SQL queries like `SELECT`. Along the way we'll learn about
-[SQLite's file format](https://www.sqlite.org/fileformat.html), how indexed data
-is
-[stored in B-trees](https://jvns.ca/blog/2014/10/02/how-does-sqlite-work-part-2-btrees/)
-and more.
+Built as a solution to the [CodeCrafters "Build Your Own SQLite"](https://codecrafters.io/challenges/sqlite) challenge.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## What it does
 
-# Passing the first stage
+| Command | Behavior |
+| --- | --- |
+| `<db> .dbinfo` | Prints the database page size and number of tables, parsed from the file header and root page |
+| `<db> .tables` | Lists user-defined table names by walking `sqlite_master` records on page 1 |
 
-The entry point for your SQLite implementation is in `src/main.rs`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+## How it works
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
-```
+The implementation reads the database byte-by-byte against the [SQLite file format spec](https://www.sqlite.org/fileformat.html):
 
-Time to move on to the next stage!
+- **Header parsing** — extracts page size from offsets 16–17 of the 100-byte database header.
+- **B-tree pages** — distinguishes leaf vs. interior page headers (8 vs. 12 bytes) by the type byte at offset 100.
+- **Cell pointer array** — walks the array of 16-bit cell offsets following the page header.
+- **Varints** — a hand-written 1–9 byte big-endian varint decoder for payload sizes, row IDs, and serial types.
+- **Record format** — parses `sqlite_master` rows (`type`, `name`, `tbl_name`, `rootpage`, `sql`) to enumerate the schema.
 
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `cargo (1.87)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
-
-# Sample Databases
-
-To make it easy to test queries locally, we've added a sample database in the
-root of this repository: `sample.db`.
-
-This contains two tables: `apples` & `oranges`. You can use this to test your
-implementation for the first 6 stages.
-
-You can explore this database by running queries against it like this:
+## Run it
 
 ```sh
-$ sqlite3 sample.db "select id, name from apples"
-1|Granny Smith
-2|Fuji
-3|Honeycrisp
-4|Golden Delicious
-```
-
-There are two other databases that you can use:
-
-1. `superheroes.db`:
-   - This is a small version of the test database used in the table-scan stage.
-   - It contains one table: `superheroes`.
-   - It is ~1MB in size.
-1. `companies.db`:
-   - This is a small version of the test database used in the index-scan stage.
-   - It contains one table: `companies`, and one index: `idx_companies_country`
-   - It is ~7MB in size.
-
-These aren't included in the repository because they're large in size. You can
-download them by running this script:
-
-```sh
+# Get sample databases (sample.db is included; superheroes.db / companies.db via script)
 ./download_sample_databases.sh
+
+# Build and query
+cargo build --release
+./your_program.sh sample.db .dbinfo
+./your_program.sh sample.db .tables
 ```
 
-If the script doesn't work for some reason, you can download the databases
-directly from
-[codecrafters-io/sample-sqlite-databases](https://github.com/codecrafters-io/sample-sqlite-databases).
+Bundled `sample.db` has two tables (`apples`, `oranges`); the downloaded `superheroes.db` and `companies.db` are larger fixtures used for scan/index stages.
+
+## Stack
+
+Rust 2021 · `anyhow` · `bytes` · zero SQL/DB dependencies — everything is built up from the SQLite file format spec.
