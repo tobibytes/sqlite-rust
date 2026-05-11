@@ -110,12 +110,12 @@ fn main() -> Result<()> {
             };
             println!("table: {} exists in the db", stmt_tbl_name);
         },
-        _ => bail!("Missing or invalid command passed: {}", command),
     }
 
     Ok(())
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct RecordHeader {
     size: usize,
@@ -183,6 +183,7 @@ fn decode_varint(buf: &[u8]) -> (u64, usize) {
     (value, consumed)
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct Record {
     s_type: String,
